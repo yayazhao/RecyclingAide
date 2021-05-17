@@ -3,7 +3,7 @@ import flask
 from flask_restful import Resource, Api
 from service.views import views
 from data.sw_facility_dao import SolidWasteFacilityDao
-
+import os
 
 def create_app():
     _app = Flask(__name__, template_folder='template', static_url_path='', static_folder='static',)
@@ -12,6 +12,7 @@ def create_app():
     return _app
 
 
+ASSETS_DIR = os.path.dirname(os.path.abspath(__file__))
 app = create_app()
 api = Api(app)
 dao = SolidWasteFacilityDao()
@@ -53,7 +54,8 @@ def before_request():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    context = ('server.crt', 'server.key')
+    app.run(debug=True, ssl_context=context)
 
 
 ## http://127.0.0.1:5000/get_waste_types

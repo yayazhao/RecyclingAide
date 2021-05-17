@@ -208,7 +208,7 @@ body {
           transport: {
             read: function(options) {
               $.ajax({
-                url: "http://{{ g.site_url|safe }}/get_waste_types",
+                url: "https://{{ g.site_url|safe }}/get_waste_types",
                 dataType: "json",
                 success: function(result) {
                   // notify the data source that the request succeeded
@@ -236,7 +236,7 @@ body {
           transport: {
             read: function(options) {
               $.ajax({
-                url: "http://{{ g.site_url|safe }}/get_activities",
+                url: "https://{{ g.site_url|safe }}/get_activities",
                 dataType: "json",
                 success: function(result) {
                   // notify the data source that the request succeeded
@@ -297,7 +297,7 @@ body {
     // get the nearest facilities
     function getNearestFacilities(lat, lng, waste_type, activity) {
         clearMarkers();
-        var url = "http://{{ g.site_url|safe }}/get_nearest_facility_list/" + lat + "," + lng +"," + globalViewModel.num_facilities + "," + waste_type + "," + activity
+        var url = "https://{{ g.site_url|safe }}/get_nearest_facility_list/" + lat + "," + lng +"," + globalViewModel.num_facilities + "," + waste_type + "," + activity
         var dataSource = new kendo.data.DataSource({
           transport: {
             read: function(options) {
@@ -392,7 +392,7 @@ body {
             dataSource: {
                 transport: {
                     read: {
-                      url: "http://{{ g.site_url|safe }}/get_facility_list",
+                      url: "https://{{ g.site_url|safe }}/get_facility_list",
                       dataType: "json",
                     }
                 },
