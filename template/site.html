@@ -536,18 +536,18 @@ body {
     <p style="text-align: left;">We observed that it is difficult to find an appropriate facility when we want to deliver some recyclables to some recycling centers, or dispose some hazardous house hold wastes. Thus we started this project to build a web site that make people easily to search, view and navigate to nearby facilities easily, and can download related data in Excel or PDF format if they like. </p>
 </script>
 <script id="second" type="text/x-kendo-template">
-    <p style="text-align: left;">It is not easy to create a meaningful and useful website. So we break the whole task into different steps:</p>
-    <p style="text-align: left;">First, we want to collect the related data. We want to start small, so we focus on North Carolina data first. Then we need to covert the data into the format we need. </p>
-    <p style="text-align: left;">Second, we design the website architecture. After some research, we decide to use Flask framework to provide the web service engine, the Flask-Restful to provide data services in RESTful approach, the Kendo UI for jQuery as the front end Javascript framework, and Google Maps to provide the Maps services. </p>
-    <p style="text-align: left;">Then we decide to use GitHub to host our code, Heroku to host our website, and JetBrains PyCharm as the IDE to do development. </p>
+    <p style="text-align: left;">First, we wanted to collect the related data. We wanted to start small, so we focused on North Carolina data first. Then we converted the data into the format we need. </p>
+    <p style="text-align: left;">Second, we designed the website architecture. Used Flask framework to build the web application, the Flask-Restful to provide data services, the Kendo UI for jQuery for front end development, and Google Maps to provide the Maps services. </p>
+    <p style="text-align: left;">Then we used GitHub to host our code, Heroku to host our website, and JetBrains PyCharm as the IDE to do development. </p>
 </script>
 <script id="third" type="text/x-kendo-template">
-    <p style="text-align: left;">It was not easy to find the most appropriate data. After an extensive search, we choose the Solid Waste Facility lists from North Carolina Department of Environmental Quality as our starting point. We will extend our web application by integrating more datasets later, when we found some more appropriate data. And we will extend this web application to cover all the united states later when we get enough data. Any information on obtaining the related data are welcome, please feel free to contact us. </p>
+    <p style="text-align: left;">After an extensive search, we chose the Solid Waste Facility lists from North Carolina Department of Environmental Quality as our starting point. We will extend our web application by integrating more datasets later, e.g. to cover all the united states rather than only North Carolina. You are welcome to provide any information on obtaining the related data, please feel free to contact us. </p>
 </script>
 <script id="fourth" type="text/x-kendo-template">
     <p style="text-align: left;"><a href="https://deq.nc.gov/about/divisions/waste-management/sw/data/facility-lists">Solid Waste Facility Lists dataset from NC DEQ</a></p>
     <p style="text-align: left;"><a href="https://github.com/yayazhao/RecyclingAide">Recycling Aide Project at GitHub</a></p>
     <p style="text-align: left;"><a href="https://recycling-aide.herokuapp.com/">Recycling Aide Website Hosted at Heroku</a></p>
+    <p style="text-align: left;"><a href="mailto:oliviasandstar@gmail.com">Email Us</a></p>
 </script>
 <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
 <script
@@ -577,11 +577,11 @@ body {
                         <div id="map"> </div>
                     </div>
                     <div>
-                        <H2>North Carolina Solid Waste Facilities.</H2>
+                        <H2>North Carolina Solid Waste Facilities</H2>
                         <div id="solid_waste_data"> </div>
                     </div>
                     <div>
-                        <H2>About Recycling Aide.</H2>
+                        <H2>About Recycling Aide</H2>
                         <div id="tilelayout"></div>
                     </div>
                 </div>
