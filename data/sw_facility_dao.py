@@ -1,17 +1,25 @@
 import os
 import pandas as pd
 from utils.utils import haversine
+import logging
+
+logger = logging.getLogger(__name__)
+PROD = True
 
 
 class SolidWasteFacilityDao:
     def __init__(self):
         self.cwd = os.getcwd()
-        if self.cwd.endswith('data'):
-            self.sw_facility_file = 'mycsv/SW_FacilityList_LatLng.csv'
-        elif self.cwd.endswith('RecyclingAide'):
+        logger.info('*' * 50 + self.cwd)
+        if PROD:
             self.sw_facility_file = 'data/mycsv/SW_FacilityList_LatLng.csv'
         else:
-            self.sw_facility_file = 'data/mycsv/SW_FacilityList_LatLng.csv'
+            if self.cwd.endswith('data'):
+                self.sw_facility_file = 'mycsv/SW_FacilityList_LatLng.csv'
+            elif self.cwd.endswith('RecyclingAide'):
+                self.sw_facility_file = 'data/mycsv/SW_FacilityList_LatLng.csv'
+            else:
+                self.sw_facility_file = 'data/mycsv/SW_FacilityList_LatLng.csv'
         self.sw_facility_path = os.path.join(self.cwd, self.sw_facility_file)
         self.fields = ['ID','County','Waste','Activity','Permit','Name','Status','Address','City','Contact','Phone','lat','lng']
         self._load_data()
