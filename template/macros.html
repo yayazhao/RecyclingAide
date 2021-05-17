@@ -1,0 +1,23 @@
+{% macro create_header() -%}
+    <table id="tblHeaderOverall" border="0" cellpadding="0" cellspacing="0" height="15%" width="100%">
+        <tr bgcolor="#757575">
+            <td height="75" width="75">
+                <img style="max-width:75px;max-height:75px;" src={{url_for('static', filename='images/recycling.png')}} />
+            </td>
+            <td align="center">
+                <span id="site_title" style="text-decoration:none;font-weight:bold;color:#ffffff;font-size:26px;font-family:verdana;text-align:center;">NcRA: North Carolina Recycling Aide</span>
+            </td>
+        </tr>
+    </table>
+{%- endmacro %}
+
+
+{% macro create_footer(version, mode) -%}
+    <table id="tblFooterOverall" border="0" height="5%" width="100%" bgcolor="#717073">
+        <tr>
+            <td align="center" class="textVerdanaWhite8" style="width: 100%">
+                {{ version }} | {{ mode }}
+            </td>
+        </tr>
+    </table>
+{%- endmacro %}

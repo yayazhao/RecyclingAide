@@ -1,1 +1,1 @@
-# RecyclingAide
+# RecyclingAIde

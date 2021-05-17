@@ -1,0 +1,593 @@
+{% import '/macros.html' as macros %}
+<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
+<head>
+{% block head %}
+<meta charset="UTF-8">
+<title>North Carolina Recycling Aide | NcRA </title>
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2021.1.330/styles/kendo.common.min.css" />
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2021.1.330/styles/kendo.default.min.css" />
+<link rel="stylesheet" href="https://kendo.cdn.telerik.com/2021.1.330/styles/kendo.default.mobile.min.css" />
+<script src="https://kendo.cdn.telerik.com/2021.1.330/js/jquery.min.js"></script>
+<script src="https://kendo.cdn.telerik.com/2021.1.330/js/kendo.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.min.js"></script>
+<style type="text/css">
+/* Set the size of the div element that contains the map */
+#map {
+    height: 92%;
+    width: 100%;
+}
+
+/*
+.tabstrip-container {
+    width: 100%;
+    height: 100%;
+}
+*/
+
+/* Optional: Makes the sample page fill the window. */
+/*
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+*/
+
+#optionWasteType,
+#searchUI,
+#searchButtonUI,
+#optionActivity {
+    background-color: #fff;
+    border: 2px solid #fff;
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    float: left;
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+#selectWasteType,
+#selectActivity,
+#searchText {
+    color: #191919;
+    font-family: Roboto, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 25px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#searchUI {
+    margin-left: 12px;
+}
+</style>
+<script type="text/javascript">
+
+    globalViewModel = kendo.observable({
+        map: null,
+        zoom1: 8,
+        zoom2: 10,
+        marker_icon_scale: 7,
+        marker_icon_color: 'red',
+        num_facilities: 10,
+        marker_list: [],
+        markers: {},
+        excludes: ['Rank', 'Name'],
+        nc_capital: { lat: 35.78064340151476, lng: -78.63909628987979 }, // The location of NC State Capital Building
+        current_loc: { lat: 35.78064340151476, lng: -78.63909628987979 }, // Init to the location of NC State Capital Building
+        url_root: "https://{{ g.site_url|safe }}",
+        data_waste_types: {'All': 'All',
+                'CCR': 'Coal Combustion Residuals',
+                'CD': 'Construction and Demolition (C&D)',
+                'HHW': 'Household Hazardous Wastes',
+                'Indus': 'Industrial Waste',
+                'LCID': 'Land Clearing and Inert Debris',
+                'MatRecovery': 'Material Recovery',
+                'Medical': 'Medical Waste',
+                'MSW': 'Municipal Solid Waste',
+                'Tire': 'Tire',
+                'TypeI': 'Type I Waste',
+                'TypeII': 'Type II Waste',
+                'TypeIII': 'Type III Waste',
+                'TypeIV': 'Type IV Waste',
+                'YW': 'Yard Waste'},
+        data_activities: {'All': 'All',
+                'Incin': 'Incineration',
+                'LF': 'Land Fill',
+                'TP': 'Treatment and Processing',
+                'Trans': 'Transfer Stations',
+                'Compost': 'Compost Facilities',
+                'Collection': 'Collection Sites',
+                'SF': 'Structural Fills',
+                'MatRecovery': 'Material Recovery'},
+        data_facilities_found: [],
+        waste_type: 'All',
+        activity: 'All',
+        control_initialized: false,
+    });
+
+    /**
+     * The RAControl adds a control to the map that
+     * select waste type and activities
+     */
+    class RAControls {
+      constructor(controlDiv, map, center) {
+        this.map_ = map;
+
+        // Set the center property upon construction
+        this.center_ = new google.maps.LatLng(center);
+        controlDiv.style.clear = "both";
+
+        // Set CSS for the control border
+        const optionWasteType = document.createElement("div");
+        optionWasteType.id = "optionWasteType";
+        optionWasteType.title = "Select a waste type";
+        controlDiv.appendChild(optionWasteType);
+        // Set CSS for the control interior
+        const selectWasteType = document.createElement("select");
+        selectWasteType.id = "selectWasteType";
+        var _inner = ''
+        for (let key in globalViewModel.data_waste_types) {
+            _inner += '<option value='+ key +'>' + globalViewModel.data_waste_types[key] + '</option>';
+        }
+        selectWasteType.innerHTML = _inner;
+        optionWasteType.appendChild(selectWasteType);
+        selectWasteType.addEventListener("change", function() {
+            globalViewModel.waste_type = selectWasteType.value;
+            console.log(globalViewModel.waste_type);
+        });
+
+        // Set CSS for the control border
+        const optionActivity = document.createElement("div");
+        optionActivity.id = "optionActivity";
+        optionActivity.title = "Select an activity";
+        controlDiv.appendChild(optionActivity);
+        // Set CSS for the control interior
+        const selectActivity = document.createElement("select");
+        selectActivity.id = "selectActivity";
+        var _inner = ''
+        for (let key in globalViewModel.data_activities) {
+            _inner += '<option value='+ key +'>' + globalViewModel.data_activities[key] + '</option>';
+        }
+        selectActivity.innerHTML = _inner;
+        optionActivity.appendChild(selectActivity);
+        selectActivity.addEventListener("change", function() {
+            globalViewModel.activity = selectActivity.value;
+            console.log(globalViewModel.activity);
+        });
+
+        // Set CSS for the setCenter control border
+        const searchUI = document.createElement("div");
+        searchUI.id = "searchUI";
+        searchUI.title = "Click to search the nearest facilities";
+        controlDiv.appendChild(searchUI);
+        const searchText = document.createElement("div");
+        searchText.id = "searchText";
+        searchText.innerHTML = "Search";
+        searchUI.appendChild(searchText);
+        // Set up the click event listener for 'Set Center': Set the center of
+        // the control to the current center of the map.
+        searchUI.addEventListener("click", () => {
+          getNearestFacilities(globalViewModel.current_loc.lat,
+                                     globalViewModel.current_loc.lng,
+                                     globalViewModel.waste_type,
+                                     globalViewModel.activity);
+        });
+      }
+    }
+
+    // create controls
+    function create_controls() {
+        if (globalViewModel.data_waste_types && globalViewModel.data_activities && globalViewModel.control_initialized===false) {
+          raControlDiv = document.createElement("div");
+          const control = new RAControls(raControlDiv, globalViewModel.map, globalViewModel.current_loc); //globalViewModel.data_waste_types, globalViewModel.data_activities);
+          raControlDiv.index = 1;
+          raControlDiv.style.paddingTop = "10px";
+          globalViewModel.map.controls[google.maps.ControlPosition.TOP_CENTER].push(raControlDiv);
+          globalViewModel.control_initialized = true;
+          console.log('Controls Created!');
+        }
+    }
+
+    function clearMarkers() {
+        for (let i = 0; i < globalViewModel.marker_list.length; i++) {
+          globalViewModel.marker_list[i].setMap(null);
+        }
+        globalViewModel.markers = {};
+        globalViewModel.marker_list = [];
+    }
+
+
+    // Init data
+    function get_waste_types() {
+
+        var ds_waste_types = new kendo.data.DataSource({
+          transport: {
+            read: function(options) {
+              $.ajax({
+                url: "http://{{ g.site_url|safe }}/get_waste_types",
+                dataType: "json",
+                success: function(result) {
+                  // notify the data source that the request succeeded
+                  // options.success(result);
+                  globalViewModel.data_waste_types = {};
+                  for (k in result) {
+                      globalViewModel.data_waste_types[k] = result[k];
+                  }
+                  console.log(globalViewModel.data_waste_types);
+                  get_activities();
+                },
+                error: function(result) {
+                  // notify the data source that the request failed
+                  // options.error(result);
+                }
+              });
+            }
+          }
+        });
+        ds_waste_types.fetch();
+    }
+
+    function get_activities() {
+        var ds_activities = new kendo.data.DataSource({
+          transport: {
+            read: function(options) {
+              $.ajax({
+                url: "http://{{ g.site_url|safe }}/get_activities",
+                dataType: "json",
+                success: function(result) {
+                  // notify the data source that the request succeeded
+                  // options.success(result);
+                  globalViewModel.data_activities = {};
+                  for (k in result) {
+                      globalViewModel.data_activities[k] = result[k];
+                  }
+                  console.log(globalViewModel.data_activities);
+                  create_controls();
+                },
+                error: function(result) {
+                  // notify the data source that the request failed
+                  // options.error(result);
+                  console.log(result);
+                }
+              });
+            }
+          }
+        });
+        ds_activities.fetch();
+    }
+
+    // create info window
+    function make_info_window(inx, facility) {
+        var contentString =
+            '<div id="content' + inx + '">' +
+            '<h3 id="head' + inx + '" class="firstHeading">' + facility.Name + '</h3>' +
+            '<div id="bodyContent' + inx + '">' +
+            '<table>'
+        for (let key in facility) {
+            if (globalViewModel.excludes.indexOf( key ) === -1) {
+                key_ = key
+                if (key==='Haversine') {
+                    key_='Distance';
+                }
+                if (key==='Activity') {
+                    contentString += '<tr><td>' + key_ + ':' + '</td><td>' + globalViewModel.data_activities[facility[key]] + '</td></tr>';
+                } else if (key==='Waste') {
+                    contentString += '<tr><td>' + key_ + ':' + '</td><td>' + globalViewModel.data_waste_types[facility[key]] + '</td></tr>';
+                } else {
+                    contentString += '<tr><td>' + key_ + ':' + '</td><td>' + facility[key] + '</td></tr>';
+                }
+            }
+        }
+        contentString += '<tr><td></td><td><a href="https://www.google.com/maps/dir/?api=1&origin=' +
+                      +  globalViewModel.current_loc.lat + ',' + globalViewModel.current_loc.lng + '&destination='
+                      +  facility.lat + ',' + facility.lng + '&travelmode=driving">'
+                      +  'Directions</a></td></tr>'
+        contentString += '</table></div></div>';
+
+        const infoWindow = new google.maps.InfoWindow({
+            content: contentString,
+        });
+        return infoWindow;
+    }
+
+    // get the nearest facilities
+    function getNearestFacilities(lat, lng, waste_type, activity) {
+        clearMarkers();
+        var url = "http://{{ g.site_url|safe }}/get_nearest_facility_list/" + lat + "," + lng +"," + globalViewModel.num_facilities + "," + waste_type + "," + activity
+        var dataSource = new kendo.data.DataSource({
+          transport: {
+            read: function(options) {
+              $.ajax({
+                url: url,
+                dataType: "json",
+                success: function(result) {
+                    // notify the data source that the request succeeded
+                    // options.success(result);
+                    globalViewModel.data_facilities_found = result;
+                    console.log(globalViewModel.data_facilities_found);
+                    inx = 0
+                    for (const fac of globalViewModel.data_facilities_found) {
+                         inx += 1;
+                         const infoWindow = make_info_window(inx, fac);
+                         const marker = new google.maps.Marker({
+                             position: {"lat": fac.lat, "lng": fac.lng},
+                             map: globalViewModel.map,
+                             icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: globalViewModel.marker_icon_scale,
+                                strokeColor: globalViewModel.marker_icon_color,
+                             },
+                         });
+                         marker.addListener("click", () => {
+                             infoWindow.open(globalViewModel.map, marker);
+                         });
+                         globalViewModel.markers[marker] = infoWindow;
+                         globalViewModel.marker_list.push(marker);
+                    }
+                    globalViewModel.map.setZoom(globalViewModel.zoom2);
+                    get_waste_types();
+                },
+                error: function(result) {
+                  // notify the data source that the request failed
+                  // options.error(result);
+                  console.log(result);
+                }
+              });
+            }
+          }
+        });
+        dataSource.fetch();
+    }
+
+
+
+    // Initialize and add the map
+    function initMap() {
+        // The map, centered at nc_capital
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: globalViewModel.zoom1,
+            center: globalViewModel.nc_capital,
+        });
+        create_controls();
+        // The marker, positioned at nc_capital
+        const marker = new google.maps.Marker({
+            position: globalViewModel.nc_capital,
+            map: map,
+        });
+        // remember the map
+        globalViewModel.map = map;
+        getNearestFacilities(globalViewModel.current_loc.lat, globalViewModel.current_loc.lng, "All", "All");
+    }
+
+    // Initialize and add the map according to current location
+    function initMapCurrentLocation(position) {
+        // The current location
+        console.log(globalViewModel.current_loc.lat, globalViewModel.current_loc.lng);
+        globalViewModel.current_loc.lat = position.coords.latitude;
+        globalViewModel.current_loc.lng = position.coords.longitude;
+        console.log(globalViewModel.current_loc.lat, globalViewModel.current_loc.lng);
+        // The map, centered at center
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: globalViewModel.zoom1,
+            center: globalViewModel.current_loc,
+        });
+        // The marker, positioned at center
+        const marker = new google.maps.Marker({
+            position: globalViewModel.current_loc,
+            map: map,
+        });
+        // remember the map
+        globalViewModel.map = map;
+        console.log(globalViewModel.map);
+
+        getNearestFacilities(globalViewModel.current_loc.lat, globalViewModel.current_loc.lng, "All", "All");
+    }
+
+    function load_facility_data() {
+        $("#solid_waste_data").kendoGrid({
+            dataSource: {
+                transport: {
+                    read: {
+                      url: "http://{{ g.site_url|safe }}/get_facility_list",
+                      dataType: "json",
+                    }
+                },
+                batch: true,
+                pageSize: 20,
+                autoSync: true,
+            },
+            columns: [{
+                field: "County",
+                title: "County"
+            },
+            {
+                field: "Waste",
+                title: "Waste Type"
+            },
+            {
+                field: "Activity",
+                title: "Activity"
+            },
+            {
+                field: "Permit",
+                title: "Permit"
+            },
+            {
+                field: "Name",
+                title: "Name"
+            },
+            {
+                field: "Address",
+                title: "Address"
+            },
+            {
+                field: "City",
+                title: "City"
+            },
+            {
+                field: "Contact",
+                title: "Contact"
+            },
+            {
+                field: "Phone",
+                title: "Phone"
+            },
+            {
+                field: "lat",
+                title: "Latitude"
+            },
+            {
+                field: "lng",
+                title: "Longitude"
+            }
+
+            ],
+            height: 600,
+            sortable: true,
+            filterable: true,
+            scrollable: true,
+            pageable: {
+                alwaysVisible: false,
+                pageSizes: [5, 10, 20, 100, 500]
+            },
+            toolbar: ["excel", "pdf", "search"],
+        });
+    }
+
+    function create_about_page() {
+        $("#tilelayout").kendoTileLayout({
+            containers: [
+                {
+                    colSpan: 1,
+                    rowSpan: 1,
+                    header: {
+                        text: "Purpose"
+                    },
+                    bodyTemplate: kendo.template($("#first").html())
+                },
+                {
+                    colSpan: 1,
+                    rowSpan: 1,
+                    header: {
+                        text: "Idea"
+                    },
+                    bodyTemplate: kendo.template($("#second").html())
+                },
+                {
+                    colSpan: 1,
+                    rowSpan: 1,
+                    header: {
+                        text: "Data"
+                    },
+                    bodyTemplate: kendo.template($("#third").html())
+                },
+                {
+                    colSpan: 1,
+                    rowSpan: 1,
+                    header: {
+                        text: "Links"
+                    },
+                    bodyTemplate: kendo.template($("#fourth").html())
+                }
+            ],
+            height: "80%",
+            columns: 2
+        });
+    }
+
+    // call back by the google map api
+    function getCurrentLocation() {
+
+        console.log(globalViewModel.url_root);
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(initMapCurrentLocation);
+        } else {
+            initMap();
+        }
+
+        $("#tabstrip").kendoTabStrip({
+            tabPosition: "left",
+            animation: {
+                // fade-out current tab over 10 milliseconds
+                close: {
+                    duration: 10,
+                    effects: "fadeOut"
+                },
+               // fade-in new tab over 10 milliseconds
+               open: {
+                   duration: 10,
+                   effects: "fadeIn"
+               }
+           }
+        });
+
+        load_facility_data();
+
+        create_about_page();
+
+    }
+</script>
+<script id="first" type="text/x-kendo-template">
+    <p style="text-align: left;">We observed that it is difficult to find an appropriate facility when we want to deliver some recyclables to some recycling centers, or dispose some hazardous house hold wastes. Thus we started this project to build a web site that make people easily to search, view and navigate to nearby facilities easily, and can download related data in Excel or PDF format if they like. </p>
+</script>
+<script id="second" type="text/x-kendo-template">
+    <p style="text-align: left;">It is not easy to create a meaningful and useful website. So we break the whole task into different steps:</p>
+    <p style="text-align: left;">First, we want to collect the related data. We want to start small, so we focus on North Carolina data first. Then we need to covert the data into the format we need. </p>
+    <p style="text-align: left;">Second, we design the website architecture. After some research, we decide to use Flask framework to provide the web service engine, the Flask-Restful to provide data services in RESTful approach, the Kendo UI for jQuery as the front end Javascript framework, and Google Maps to provide the Maps services. </p>
+    <p style="text-align: left;">Then we decide to use GitHub to host our code, Heroku to host our website, and JetBrains PyCharm as the IDE to do development. </p>
+</script>
+<script id="third" type="text/x-kendo-template">
+    <p style="text-align: left;">It was not easy to find the most appropriate data. After an extensive search, we choose the Solid Waste Facility lists from North Carolina Department of Environmental Quality as our starting point. We will extend our web application by integrating more datasets later, when we found some more appropriate data. And we will extend this web application to cover all the united states later when we get enough data. Any information on obtaining the related data are welcome, please feel free to contact us. </p>
+</script>
+<script id="fourth" type="text/x-kendo-template">
+    <p style="text-align: left;"><a href="https://deq.nc.gov/about/divisions/waste-management/sw/data/facility-lists">Solid Waste Facility Lists dataset from NC DEQ</a></p>
+    <p style="text-align: left;"><a href="https://github.com/yayazhao/RecyclingAide">Recycling Aide Project at GitHub</a></p>
+    <p style="text-align: left;"><a href="https://recycling-aide.herokuapp.com/">Recycling Aide Website Hosted at Heroku</a></p>
+</script>
+<!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA3IL6n1GRc5dWai6m53fHe4k818Cgf2OA&callback=getCurrentLocation&libraries=&v=weekly"
+  async
+></script>
+{% endblock %}
+</head>
+<body>
+    <div class="k-content"><table id="tblBody" border="0" style="width:100%;height:100%;">
+        <tr><td>{{ macros.create_header() }}</td></tr>
+        <tr><td id="tblMain" border="0" align="center" style="width:100%;height:80%;">
+            <div class="tabstrip-container" style="width:100%;height:100%;">
+                <div id="tabstrip"  style="width:100%;height:100%;">
+                    <ul>
+                        <li class="k-state-active">
+                            Maps
+                        </li>
+                        <li>
+                            Data
+                        </li>
+                        <li>
+                            About
+                        </li>
+                    </ul>
+                    <div>
+                        <div id="map"> </div>
+                    </div>
+                    <div>
+                        <H2>North Carolina Solid Waste Facilities.</H2>
+                        <div id="solid_waste_data"> </div>
+                    </div>
+                    <div>
+                        <H2>About Recycling Aide.</H2>
+                        <div id="tilelayout"></div>
+                    </div>
+                </div>
+            </div>
+        </td></tr>
+        <tr><td>{{ macros.create_footer( g.recycling_aide, g.slogan ) }}</td></tr>
+    </table></div>
+</body>
+</html>
