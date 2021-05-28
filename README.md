@@ -11,7 +11,7 @@ Our goal for this project is to make people easy to view, and navigate to nearby
 2. Go to that folder
 3. Register with Google Maps services and create an API Key. Then open template/site.html, find the line which starts with ```src="https://maps.googleapis.com/maps/api/js?key=```, and replace the key value with your key.
 3. Run the below commands:
-   ```bash
+   ```buildoutcfg
    pip install -r requirements.txt
    flask run
    ```
