@@ -5,6 +5,7 @@ Our goal for this project is to make people easy to view, and navigate to nearby
 1. The dataset used here is solid waste facilities, which is obtained from <a href="https://deq.nc.gov/about/divisions/waste-management/sw/data/facility-lists"><b>NC DEQ</b></a>
 2. The Flask framework was used to build the website, the Flask-Restful was used to provide data services, the Kendo UI for jQuery was for front end development, and Google Maps was used to provide the map services.
 3. GitHub is used to host <a href="https://github.com/yayazhao/RecyclingAide"><b>our code</b></a>, Heroku to host our website, and JetBrains PyCharm as the IDE to do development. <a href="https://recycling-aide.herokuapp.com"><b>Here</b></a> can access to our website hosted at Heroku.
+4. <a href="https://youtu.be/FiyjdTZHokE">YouTube demo video.</a>
 
 ## Run locally
 1. Clone or download code to a folder on your local machine
